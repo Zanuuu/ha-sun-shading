@@ -23,7 +23,11 @@ import os
 # racine du dépôt (custom_components/sun_shading/pipeline/zone.py → 4 niveaux)
 RACINE = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(
     os.path.abspath(__file__)))))
-ZONES = os.path.join(RACINE, "zones")
+# Où chercher une zone nommée : à côté de ce dépôt par défaut, ailleurs si
+# $SUN_SHADING_ZONES le dit. Sans cela, un dépôt qui consomme celui-ci en
+# sous-module ne pourrait pas nommer ses propres zones — elles vivent chez
+# lui, pas ici.
+ZONES = os.environ.get("SUN_SHADING_ZONES") or os.path.join(RACINE, "zones")
 
 # Rayons par défaut (m). La carte affiche jusqu'à `carte` ; bâtiments et
 # ponts sont gardés un peu au-delà pour porter leurs ombres dans la zone ; le
