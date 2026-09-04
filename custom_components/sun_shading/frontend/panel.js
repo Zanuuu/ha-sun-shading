@@ -8109,7 +8109,7 @@ let terrainMesh = null;
 let batiMesh, pontsMesh, routesMesh, cheminsMesh, anneauLigne;
 let modeleMesh = null; // toiture mesurée (remplace celle du LoD2)
 let haloSprite, ligneSoleil, arcMesh = null, matArc;
-let centreDomicile = new THREE.Vector3(0, 0, 10);
+let centreZone = new THREE.Vector3(0, 0, 10);
 let trajetR = 1300;
 const ancres = { lever: null, coucher: null };
 let arbresData = [];
@@ -8311,7 +8311,7 @@ function initScene(buf, bufDom) {
     new THREE.LineBasicMaterial({ color: 0xf0b347, transparent: true, opacity: 0.55 }));
   scene.add(anneauLigne);
 
-  centreDomicile = new THREE.Vector3(0, 0, zSol + 2);
+  centreZone = new THREE.Vector3(0, 0, zSol + 2);
 
   // trajet du soleil : arc, disque + halo, ligne pointillée
   trajetGroupe = new THREE.Group();
@@ -8356,7 +8356,7 @@ function trajetCentre() {
     c.z += 2;
     return c;
   }
-  return centreDomicile.clone();
+  return centreZone.clone();
 }
 
 const ROSE_ABR = ["N", "NE", "E", "SE", "S", "SO", "O", "NO"];
@@ -9520,6 +9520,7 @@ function fermeSonde() {
    ailleurs (test, serveur statique), il n'y a pas de session : le panneau
    reste caché et rien n'est tenté. */
 const HA_DOMAINE = "sun_shading";
+let PANNEAU = null;         // config du panneau (data, entry_id, réglages)
 const MASQUE_PAS_AZ = 1;
 const MASQUE_SEUIL = 0.5; // plus de la moitié du carré de 50 cm éclairée
 
@@ -9689,7 +9690,12 @@ async function haRafraichit() {
       .filter((e) => e.attributes && e.attributes.opening)
       .map((e) => ({
         id: e.attributes.opening, entite: e.entity_id, etat: e.state,
-        nom: e.attributes.friendly_name, volet: e.attributes.cover,
+        // `opening_name` et non friendly_name : ce dernier porte le nom de
+        // l'appareil en préfixe (« Ensoleillement Soleil direct Salon »), qui
+        // se réinjecterait dans le stockage à chaque republication et
+        // s'empilerait à chaque tour.
+        nom: e.attributes.opening_name || e.attributes.friendly_name,
+        volet: e.attributes.cover,
         point: e.attributes.point, normale: e.attributes.normal,
         elMin: e.attributes.elevation_min, elMax: e.attributes.elevation_max,
       }))
@@ -9721,6 +9727,7 @@ async function haEnregistreOuverture(id, nom, volet, surProgres) {
   const p = sondeEtat.point, n = sondeEtat.normale;
   await haAppelService(HA_DOMAINE, "set_opening", {
       id, name: nom, cover: volet,
+      ...(PANNEAU && PANNEAU.entry_id ? { entry_id: PANNEAU.entry_id } : {}),
       point: [r(p.x), r(p.y), r(p.z)],
       normal: [r(n.x), r(n.y), r(n.z)],
       leafy: ete.bandes.map((b) => [b.elMin, b.elMax]),
@@ -10104,9 +10111,14 @@ function boucle(t) {
 /* ============================== Démarrage ============================== */
 /* Montage : appelé une fois par la page autonome comme par l'élément
    personnalisé, avec la racine où le gabarit a été injecté. */
-async function monte(r, h, base) {
+async function monte(r, h, base, cfgPanneau) {
   racine = r;
   hote = h;
+  /* Configuration posée par l'intégration : où sont les données, et SURTOUT
+     à quelle entrée publier. Sans entry_id, une instance à plusieurs zones
+     refuse le service — le repère local d'une zone n'a aucun sens dans une
+     autre, mieux vaut une erreur qu'un masque publié au mauvais endroit. */
+  PANNEAU = cfgPanneau || null;
   // `narrow` peut avoir été posé avant le montage : le réappliquer sur l'hôte
   poseEtroit(etroit);
   calibreHauteur();
@@ -10287,7 +10299,7 @@ class SunShading extends HTMLElement {
       const r = this.attachShadow({ mode: "open" });
       r.innerHTML = GABARIT;
       const cfg = this._panel && this._panel.config;
-      monte(r, this, (cfg && cfg.data) || BASE_MODULE);
+      monte(r, this, (cfg && cfg.data) || BASE_MODULE, cfg || null);
     });
   }
   /* panel_custom écrit `hass` à chaque changement d'état : on mémorise, on ne

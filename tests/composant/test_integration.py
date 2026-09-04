@@ -85,6 +85,23 @@ async def test_service_publie_une_ouverture(hass: HomeAssistant, tmp_path):
     assert hass.states.get("binary_sensor.maison_direct_sun_salon") is None
 
 
+async def test_nom_de_l_ouverture_republiable(hass: HomeAssistant, tmp_path):
+    """La carte republie le nom qu'elle lit ; il ne doit pas se gonfler.
+
+    Vécu en production le 04/09/2026 : avec `has_entity_name`, le
+    `friendly_name` vaut « <appareil> Soleil direct <nom> ». La carte le
+    relisait comme nom d'ouverture et le republiait, si bien que chaque
+    « Tout recalculer » ajoutait un préfixe de plus. D'où cet attribut
+    dédié, qui porte le nom BRUT."""
+    await entree_externe(hass, tmp_path)
+    await hass.services.async_call(DOMAINE, SERVICE_DEFINIR, ouverture(),
+                                   blocking=True)
+    await hass.async_block_till_done()
+    etat = hass.states.get("binary_sensor.maison_direct_sun_salon")
+    assert etat.attributes["opening_name"] == "Salon"
+    assert etat.attributes["opening_name"] != etat.attributes.get("friendly_name")
+
+
 async def test_masque_incoherent_refuse(hass: HomeAssistant, tmp_path):
     """360 bandes pour un pas de 1° : un masque tronqué serait lu de travers
     sur tout le tour, sans aucun symptôme visible."""

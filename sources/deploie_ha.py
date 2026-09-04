@@ -22,7 +22,8 @@ import re
 import subprocess
 import sys
 
-import zone as zones
+import _pipeline  # noqa: F401  (ajoute le paquet du pipeline au chemin)
+from pipeline import zone as zones
 
 RACINE = zones.RACINE
 AUTH_DEFAUT = os.path.expanduser("~/.config/sun-shading/smb_auth")

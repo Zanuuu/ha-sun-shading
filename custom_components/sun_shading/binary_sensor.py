@@ -112,6 +112,9 @@ class OuvertureAuSoleil(BinarySensorEntity):
         attributs = {
             # la carte reconnaît ses entités à cet attribut, pas à leur nom
             "opening": self._cle,
+            # nom BRUT de l'ouverture : la carte le republie tel quel, alors
+            # que friendly_name porterait en plus le nom de l'appareil
+            "opening_name": o.get("name"),
             "elevation_min": round(bas, 2),
             "elevation_max": round(haut, 2),
             "foliage": self._feuillage,

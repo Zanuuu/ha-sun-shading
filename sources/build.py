@@ -99,7 +99,7 @@ class SunShading extends HTMLElement {{
       const r = this.attachShadow({{ mode: "open" }});
       r.innerHTML = GABARIT;
       const cfg = this._panel && this._panel.config;
-      monte(r, this, (cfg && cfg.data) || BASE_MODULE);
+      monte(r, this, (cfg && cfg.data) || BASE_MODULE, cfg || null);
     }});
   }}
   /* panel_custom écrit `hass` à chaque changement d'état : on mémorise, on ne
