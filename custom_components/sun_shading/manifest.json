@@ -1,0 +1,22 @@
+{
+  "domain": "sun_shading",
+  "name": "Sun Shading",
+  "version": "1.0.0",
+  "documentation": "https://github.com/Zanuuu/ha-sun-shading",
+  "issue_tracker": "https://github.com/Zanuuu/ha-sun-shading/issues",
+  "codeowners": [
+    "@Zanuuu"
+  ],
+  "config_flow": true,
+  "integration_type": "service",
+  "iot_class": "calculated",
+  "dependencies": [
+    "sun",
+    "http",
+    "frontend",
+    "panel_custom"
+  ],
+  "requirements": [
+    "Pillow>=10.0.0"
+  ]
+}

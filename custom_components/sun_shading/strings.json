@@ -1,0 +1,264 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Sun Shading",
+        "description": "Sun Shading simulates the shadows cast on your windows by the real buildings, terrain and trees around them, from the Strasbourg Eurométropole 3D open data.\n\nBuilding a zone downloads a few gigabytes of 3D tiles and takes tens of minutes — the next screen tells you how many tiles, how much disk and how long on this machine. The entry is created right away: the sidebar panel and a progress sensor appear immediately, and the map opens when the build finishes.",
+        "menu_options": {
+          "build": "Build a zone from coordinates",
+          "external": "Use data built outside Home Assistant"
+        }
+      },
+      "build": {
+        "title": "Zone to simulate",
+        "description": "The map is centred on this point, prefilled with your Home Assistant location. Only the Strasbourg Eurométropole is covered by the source data.",
+        "data": {
+          "location": "Centre and displayed radius",
+          "title": "Zone name"
+        },
+        "data_description": {
+          "location": "The radius drives everything else: 500 m ≈ 9 tiles and ~1 GB downloaded, 1000 m ≈ 29 tiles and ~3 GB, 1500 m ≈ 60 tiles and ~6 GB. Buildings, terrain and textures extend a little further so that off-map shadows still fall on the map.",
+          "title": "Shown in the sidebar and used to name the entities and the data folder."
+        },
+        "sections": {
+          "advanced": {
+            "name": "Advanced",
+            "description": "Leave empty to derive everything from the radius above.",
+            "data": {
+              "photomesh": "Photo 3D mode (photogrammetric mesh)",
+              "photomesh_radius": "Photomesh radius",
+              "ortho_px": "Aerial imagery resolution",
+              "shadow_lift": "Lift baked-in shadows",
+              "obj_path": "Precise roof model (OBJ file)",
+              "r_bati": "Buildings radius",
+              "r_terrain": "Terrain radius",
+              "r_arbres": "Trees radius",
+              "r_textures": "Textured façades radius",
+              "r_mnt_natif": "Native-resolution terrain radius"
+            },
+            "data_description": {
+              "photomesh": "The heaviest option by far: about 1 GB downloaded and 20-30 minutes for 200 m, plus ~370 MB of graphics memory when the viewer switches to it. Off by default.",
+              "photomesh_radius": "200 m is the tested value; cost grows with the square of the radius.",
+              "ortho_px": "8192 px ≈ 44 cm/px and 169 MB of graphics memory once decoded; 4096 px costs four times less and looks blurry when zoomed in.",
+              "shadow_lift": "The 2022 aerial imagery has the shadows of that day baked into it, which add up to the simulated ones. 0.78 lifts them; 1 leaves them untouched.",
+              "obj_path": "Path relative to the configuration folder. Replaces the simplified roof of one building with a hand-modelled one (see the repository documentation).",
+              "r_bati": "Leave 0 to derive: displayed radius + 50 m, so that shadows cast from just outside the map still land on it.",
+              "r_terrain": "Leave 0 to derive: displayed radius + 80 m, so the edge of the world is never visible.",
+              "r_arbres": "Leave 0 to derive: same as the displayed radius.",
+              "r_textures": "Leave 0 to derive: displayed radius + 50 m. Only affects the satellite view.",
+              "r_mnt_natif": "Terrain kept at full resolution up to here, aggregated on a 10 m grid beyond. Leave 0 for 500 m."
+            }
+          }
+        }
+      },
+      "estimate": {
+        "title": "Before building “{title}”",
+        "description": "Tiles to read: {tiles} (3D model){photo_tiles_line}\nDownload: about {download_gb} GB, kept in config/sun_shading/cache/ ({cache_gb} GB) so a rebuild costs nothing\nProduced data: about {disk_mb} MB\nEstimated time on this machine: {duration}\n\nThe build runs in the background: you can close this dialog, follow it on the “build state” sensor, and the panel shows its progress. Nothing is downloaded again if you rebuild later."
+      },
+      "external": {
+        "title": "Data built outside Home Assistant",
+        "description": "Point to a folder produced by the pipeline (python3 sources/build.py --zone …), relative to your configuration folder. It must contain manifest.json.",
+        "data": {
+          "folder": "Data folder",
+          "title": "Zone name"
+        },
+        "data_description": {
+          "folder": "For example sun_shading/my-zone — copy the whole dist/ folder there."
+        }
+      },
+      "reconfigure": {
+        "title": "Zone to simulate",
+        "description": "Changing the position, the radius or an advanced setting rebuilds the zone; already downloaded tiles are reused.",
+        "data": {
+          "location": "Centre and displayed radius",
+          "title": "Zone name"
+        },
+        "data_description": {
+          "location": "The radius drives everything else: 500 m ≈ 9 tiles and ~1 GB downloaded, 1000 m ≈ 29 tiles and ~3 GB, 1500 m ≈ 60 tiles and ~6 GB.",
+          "title": "Shown in the sidebar and used to name the entities and the data folder."
+        },
+        "sections": {
+          "advanced": {
+            "name": "Advanced",
+            "description": "Leave empty to derive everything from the radius above.",
+            "data": {
+              "photomesh": "Photo 3D mode (photogrammetric mesh)",
+              "photomesh_radius": "Photomesh radius",
+              "ortho_px": "Aerial imagery resolution",
+              "shadow_lift": "Lift baked-in shadows",
+              "obj_path": "Precise roof model (OBJ file)",
+              "r_bati": "Buildings radius",
+              "r_terrain": "Terrain radius",
+              "r_arbres": "Trees radius",
+              "r_textures": "Textured façades radius",
+              "r_mnt_natif": "Native-resolution terrain radius"
+            },
+            "data_description": {
+              "photomesh": "The heaviest option by far: about 1 GB downloaded and 20-30 minutes for 200 m, plus ~370 MB of graphics memory when the viewer switches to it. Off by default.",
+              "photomesh_radius": "200 m is the tested value; cost grows with the square of the radius.",
+              "ortho_px": "8192 px ≈ 44 cm/px and 169 MB of graphics memory once decoded; 4096 px costs four times less and looks blurry when zoomed in.",
+              "shadow_lift": "The 2022 aerial imagery has the shadows of that day baked into it, which add up to the simulated ones. 0.78 lifts them; 1 leaves them untouched.",
+              "obj_path": "Path relative to the configuration folder. Replaces the simplified roof of one building with a hand-modelled one (see the repository documentation).",
+              "r_bati": "Leave 0 to derive: displayed radius + 50 m, so that shadows cast from just outside the map still land on it.",
+              "r_terrain": "Leave 0 to derive: displayed radius + 80 m, so the edge of the world is never visible.",
+              "r_arbres": "Leave 0 to derive: same as the displayed radius.",
+              "r_textures": "Leave 0 to derive: displayed radius + 50 m. Only affects the satellite view.",
+              "r_mnt_natif": "Terrain kept at full resolution up to here, aggregated on a 10 m grid beyond. Leave 0 for 500 m."
+            }
+          }
+        }
+      },
+      "reconfigure_external": {
+        "title": "Data built outside Home Assistant",
+        "description": "Point to a folder produced by the pipeline, relative to your configuration folder.",
+        "data": {
+          "folder": "Data folder",
+          "title": "Zone name"
+        }
+      }
+    },
+    "error": {
+      "out_of_coverage": "No 3D tile covers this point: the source data only spans the Strasbourg Eurométropole.",
+      "radius_out_of_range": "The radius must be between 100 m and 1500 m (beyond that the quantised local frame overflows).",
+      "obj_not_found": "OBJ file not found, relative to the configuration folder.",
+      "no_manifest": "No manifest.json in this folder: it is not a folder built by the pipeline."
+    },
+    "abort": {
+      "already_configured": "This zone is already configured.",
+      "reconfigure_successful": "Zone updated; it is rebuilt if needed."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Sun Shading",
+        "description": "These settings apply immediately: nothing is rebuilt.",
+        "data": {
+          "title": "Sidebar title",
+          "sidebar_icon": "Sidebar icon",
+          "require_admin": "Administrators only",
+          "shadow_quality": "Default shadow quality"
+        },
+        "data_description": {
+          "require_admin": "The panel writes horizon masks and reads your covers; leave it on unless you want it to be viewable by everyone.",
+          "shadow_quality": "2048 costs about 30 MB of graphics memory, 4096 about 117 MB, 8192 about 470 MB — the single largest item in the scene. Capped at 4096 in Photo 3D mode. Viewers can still change it in the map."
+        },
+        "sections": {
+          "advanced": {
+            "name": "Advanced",
+            "description": "How masks are computed and read.",
+            "data": {
+              "foliation": "Foliation dates",
+              "threshold": "Lit fraction threshold",
+              "azimuth_step": "Azimuth step"
+            },
+            "data_description": {
+              "foliation": "Four days of the year (1 January = 0): start and end of budburst, start and end of leaf fall. Deciduous trees let much more sun through when bare, and the two masks are blended along these ramps.",
+              "threshold": "How much of the 50 cm probe square must be lit for “direct sun” to be declared.",
+              "azimuth_step": "Degrees between two bands of a mask. A finer step costs proportionally more time when the page computes a mask (about 2 s at 1°)."
+            }
+          }
+        }
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "direct_sun": {
+        "name": "Direct sun {name}"
+      }
+    },
+    "sensor": {
+      "build_state": {
+        "name": "Build state",
+        "state": {
+          "idle": "Idle",
+          "building": "Building",
+          "done": "Done",
+          "error": "Error"
+        }
+      }
+    },
+    "button": {
+      "rebuild": {
+        "name": "Rebuild"
+      }
+    }
+  },
+  "services": {
+    "set_opening": {
+      "name": "Set opening",
+      "description": "Creates or updates the “direct sun” sensor of an opening, from the horizon mask computed by the map. Called by the page; not meant to be typed by hand.",
+      "fields": {
+        "id": {
+          "name": "Identifier",
+          "description": "Stable identifier of the opening (lowercase, no spaces)."
+        },
+        "name": {
+          "name": "Name",
+          "description": "Readable name, which becomes the sensor's."
+        },
+        "entry_id": {
+          "name": "Zone",
+          "description": "Config entry of the zone; required when several are configured."
+        },
+        "cover": {
+          "name": "Cover",
+          "description": "Roller shutter serving this opening."
+        },
+        "point": {
+          "name": "Point",
+          "description": "Probed point, in the map's local frame (x, y, z)."
+        },
+        "normal": {
+          "name": "Normal",
+          "description": "Normal of the surface at the probed point."
+        },
+        "leafy": {
+          "name": "Leafy mask",
+          "description": "[min, max] elevation bands per azimuth, deciduous trees in leaf."
+        },
+        "bare": {
+          "name": "Bare mask",
+          "description": "[min, max] elevation bands per azimuth, deciduous trees bare."
+        },
+        "azimuth_step": {
+          "name": "Azimuth step",
+          "description": "Degrees between two bands."
+        },
+        "threshold": {
+          "name": "Threshold",
+          "description": "Lit fraction of the opening above which direct sun is declared."
+        },
+        "foliation": {
+          "name": "Foliation dates",
+          "description": "Four days (zero-based): start and end of budburst, start and end of leaf fall."
+        }
+      }
+    },
+    "remove_opening": {
+      "name": "Remove opening",
+      "description": "Removes an opening and its sensor.",
+      "fields": {
+        "id": {
+          "name": "Identifier",
+          "description": "Identifier of the opening to remove."
+        },
+        "entry_id": {
+          "name": "Zone",
+          "description": "Config entry of the zone; required when several are configured."
+        }
+      }
+    },
+    "rebuild": {
+      "name": "Rebuild",
+      "description": "Rebuilds the zone from the source data. Already downloaded tiles are reused.",
+      "fields": {
+        "entry_id": {
+          "name": "Zone",
+          "description": "Config entry of the zone; required when several are configured."
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,22 @@
+# Dépendances installées localement (versions épinglées dans package.json)
+node_modules/
+
+# Artefacts Python
+__pycache__/
+*.pyc
+.venv/
+
+# Sorties Playwright
+test-results/
+playwright-report/
+
+# Sortie de build.py, propre à chaque machine
+zones/*/dist/
+
+# Les zones sont personnelles : seule celle de démonstration est versionnée
+zones/*
+!zones/strasbourg-cathedrale/
+
+# État de session et outillage locaux
+.remember/
+.claude/

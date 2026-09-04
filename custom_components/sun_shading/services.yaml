@@ -1,0 +1,113 @@
+set_opening:
+  name: Set opening
+  description: >-
+    Crée ou met à jour le capteur « soleil direct » d'une ouverture, à partir
+    du masque d'horizon calculé par la carte. Appelé par la page, pas destiné
+    à la saisie manuelle.
+  fields:
+    id:
+      name: Identifiant
+      description: Identifiant stable de l'ouverture (minuscules, sans espace).
+      required: true
+      example: salon_fenetre
+      selector:
+        text:
+    name:
+      name: Nom
+      description: Nom lisible, qui devient celui du capteur.
+      required: true
+      example: Fenêtre du salon
+      selector:
+        text:
+    entry_id:
+      name: Zone
+      description: Entrée de configuration de la zone ; obligatoire quand
+        plusieurs sont configurées.
+      selector:
+        config_entry:
+          integration: sun_shading
+    cover:
+      name: Volet
+      description: Volet roulant desservant cette ouverture.
+      selector:
+        entity:
+          domain: cover
+    point:
+      name: Point
+      description: Point sondé, en repère local de la carte (x, y, z).
+      required: true
+      selector:
+        object:
+    normal:
+      name: Normale
+      description: Normale de la surface au point sondé.
+      required: true
+      selector:
+        object:
+    leafy:
+      name: Masque feuillé
+      description: Bandes [élévation min, max] par azimut, feuillus en feuilles.
+      required: true
+      selector:
+        object:
+    bare:
+      name: Masque nu
+      description: Bandes [élévation min, max] par azimut, feuillus nus.
+      required: true
+      selector:
+        object:
+    azimuth_step:
+      name: Pas d'azimut
+      description: Écart en degrés entre deux bandes.
+      selector:
+        number:
+          min: 0.25
+          max: 10
+    threshold:
+      name: Seuil
+      description: Fraction éclairée de l'ouverture au-delà de laquelle on
+        déclare le soleil direct.
+      selector:
+        number:
+          min: 0
+          max: 1
+          step: 0.05
+    foliation:
+      name: Bornes de feuillaison
+      description: Quatre jours (base 0) — début et fin du débourrement, début
+        et fin de la chute des feuilles.
+      selector:
+        object:
+
+remove_opening:
+  name: Remove opening
+  description: Retire une ouverture et son capteur.
+  fields:
+    id:
+      name: Identifiant
+      required: true
+      example: salon_fenetre
+      selector:
+        text:
+    entry_id:
+      name: Zone
+      description: Entrée de configuration de la zone ; obligatoire quand
+        plusieurs sont configurées.
+      selector:
+        config_entry:
+          integration: sun_shading
+
+rebuild:
+  name: Rebuild
+  description: >-
+    Reconstruit la zone à partir des données sources (dalles de
+    l'Eurométropole). Les dalles déjà téléchargées sont réutilisées ; une
+    seule construction tourne à la fois.
+  fields:
+    entry_id:
+      name: Zone
+      description: Entrée de configuration de la zone ; obligatoire quand
+        plusieurs sont configurées.
+      selector:
+        config_entry:
+          integration: sun_shading

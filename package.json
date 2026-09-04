@@ -1,0 +1,17 @@
+{
+  "name": "ha-sun-shading",
+  "private": true,
+  "scripts": {
+    "test": "export ZONE=${ZONE:-strasbourg-cathedrale} && python3 tests/test_masque.py && playwright test",
+    "test:page": "export ZONE=${ZONE:-strasbourg-cathedrale} && playwright test",
+    "test:integration": "python3 -m pytest"
+  },
+  "description": "Dépendances inlinées au build du panneau Sun Shading (versions épinglées, aucun CDN)",
+  "dependencies": {
+    "three": "0.152.2",
+    "three-mesh-bvh": "0.6.8"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.62.1"
+  }
+}

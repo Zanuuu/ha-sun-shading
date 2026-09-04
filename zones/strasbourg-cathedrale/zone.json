@@ -1,0 +1,14 @@
+{
+  "nom": "strasbourg-cathedrale",
+  "titre": "Ensoleillement Strasbourg, cathédrale",
+  "lat": 48.581944,
+  "lon": 7.750833,
+  "fuseau": "Europe/Paris",
+  "controle": {
+    "commentaire": "Valeurs solaires de reference pour le test de fumee (NOAA, seuil geometrique -0,833 deg), heure legale.",
+    "elevation_midi_21_06": 64.9,
+    "lever_21_06": "05:27",
+    "coucher_21_06": "21:35",
+    "elevation_midi_21_12": 18.0
+  }
+}

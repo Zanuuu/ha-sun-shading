@@ -1,0 +1,417 @@
+<!-- Contenu du shadow root de <sun-shading> : styles et balisage.
+     Ni doctype ni <meta> — la page autonome et le panneau Home Assistant les
+     fournissent chacun de leur côté (voir sources/build.py). -->
+<style>
+  /* :host et non :root — les jetons doivent vivre sur l'élément, seul point
+     d'ancrage commun à la page autonome et au panneau. */
+  :host{
+    display:block; position:relative; overflow:hidden; height:100%;
+    background:var(--bg); color:var(--text); font-family:var(--font-ui);
+    -webkit-user-select:none; user-select:none;
+    --bg:#e9e6de; --panel:rgba(250,248,242,.9); --panel-solid:#f4f1e9;
+    --text:#22272e; --muted:#5d6570; --accent:#a87413; --accent-ink:#fffaf0;
+    --or:#f0b347; --line:rgba(34,39,46,.16);
+    --radius:10px;
+    --font-ui:system-ui,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;
+    --font-data:ui-monospace,"Cascadia Mono","SF Mono",Consolas,"Liberation Mono",monospace;
+    --font-title:var(--font-ui);
+  }
+  @media (prefers-color-scheme: dark){
+    :host(:not([data-theme="light"])){
+      --bg:#10141a; --panel:rgba(16,20,26,.86); --panel-solid:#161b22;
+      --text:#efece3; --muted:#98a0ab; --accent:#f0b347; --accent-ink:#141414;
+      --line:rgba(239,236,227,.14);
+    }
+  }
+  :host([data-theme="dark"]){
+    --bg:#10141a; --panel:rgba(16,20,26,.86); --panel-solid:#161b22;
+    --text:#efece3; --muted:#98a0ab; --accent:#f0b347; --accent-ink:#141414;
+    --line:rgba(239,236,227,.14);
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  #scene{position:absolute;inset:0;display:block;touch-action:none}
+
+  /* z-index : au-dessus des étiquettes projetées sur la scène (.sur-scene, z-index 5) */
+  .panel{position:absolute;background:var(--panel);border:1px solid var(--line);z-index:6;
+         border-radius:var(--radius);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+
+  /* ---- carte titre ---- */
+  #titre{top:14px;left:14px;padding:12px 16px 10px;max-width:290px}
+  #titre h1{font-family:var(--font-title);font-size:19px;font-weight:700;letter-spacing:.01em;line-height:1.15}
+  #titre .lieu{color:var(--muted);font-size:12.5px;margin-top:3px}
+  #titre .credit{color:var(--muted);font-size:10.5px;margin-top:8px;line-height:1.45;
+                 border-top:1px solid var(--line);padding-top:7px}
+  #titre .credit b{color:var(--text);font-weight:500}
+
+  /* ---- boussole ---- */
+  #boussole{top:14px;right:14px;width:46px;height:46px;border-radius:50%;
+            display:flex;align-items:center;justify-content:center;cursor:pointer}
+  #boussole svg{width:34px;height:34px;transition:transform .06s linear}
+  #boussole .n{font:600 9px var(--font-ui);fill:var(--text)}
+  #boussole .aig-n{fill:var(--or)}
+  #boussole .aig-s{fill:var(--muted);opacity:.55}
+  #boussole .cadran{stroke:var(--line)}
+
+  /* ---- réglages ---- */
+  /* bouton d'ouverture, visible uniquement sur écran contraint (voir media queries) */
+  /* ---- menu de Home Assistant (vue étroite) ---- */
+  /* La barre latérale de HA disparaît sous 870 px de large : sans ce bouton,
+     un panneau plein écran sur téléphone n'a aucun moyen d'en sortir. Il
+     n'apparaît que lorsque HA nous dit que la vue est étroite. */
+  #btn-menu{display:none;top:14px;left:14px;width:40px;height:40px;border-radius:50%;
+            cursor:pointer;align-items:center;justify-content:center;color:var(--text);padding:0}
+  #btn-menu svg{width:22px;height:22px}
+  :host([data-etroit]) #btn-menu{display:flex}
+  /* le titre laisse la place au burger */
+  :host([data-etroit]) #titre{left:62px}
+  #btn-reglages{display:none;width:40px;height:40px;border-radius:50%;cursor:pointer;
+                align-items:center;justify-content:center;color:var(--text);padding:0}
+  #btn-reglages svg{width:20px;height:20px}
+  #reglages{top:72px;right:14px;padding:10px 12px;width:172px;font-size:12px;display:flex;
+            flex-direction:column;gap:9px}
+  #reglages label{display:flex;align-items:center;justify-content:space-between;gap:8px;color:var(--muted)}
+  #reglages select{background:var(--panel-solid);color:var(--text);border:1px solid var(--line);
+                   border-radius:6px;font:inherit;padding:2px 4px;max-width:92px}
+  #reglages input[type=checkbox]{accent-color:var(--accent)}
+  #reglages .etat{font-size:10px;color:var(--accent);flex:1;text-align:right;margin-right:4px}
+  /* le sélecteur de carte occupe déjà 92 px des 148 px utiles : son indicateur
+     passe à la ligne au lieu de le pousser hors du panneau */
+  #reglages .etat:empty{display:none}
+  #reglages label.carte{flex-wrap:wrap}
+  #reglages label.carte .etat{flex-basis:100%;text-align:left;margin:2px 0 0}
+  #reglages input[type=range]{width:86px;height:18px;flex:none}
+  #reglages input[type=range]::-webkit-slider-thumb{width:10px;height:16px;border-width:1px}
+
+  /* ---- étiquettes projetées du trajet du soleil ---- */
+  .sur-scene{position:absolute;transform:translate(-50%,-50%);pointer-events:none;display:none;
+      z-index:5;font-family:var(--font-data);font-variant-numeric:tabular-nums}
+  #badge-soleil{background:#191817;border:1.5px solid #f0b347;color:#ffd97a;border-radius:999px;
+      padding:3px 11px;font-size:12px;font-weight:500;white-space:nowrap;
+      box-shadow:0 2px 8px rgba(0,0,0,.35)}
+  .eti-solaire{color:#ffc65e;font-size:12px;font-weight:500;text-align:center;white-space:pre-line;
+      line-height:1.3;text-shadow:0 1px 3px rgba(0,0,0,.85),0 0 6px rgba(0,0,0,.5)}
+
+  /* ---- sonde ---- */
+  #sonde{left:14px;bottom:14px;padding:10px 12px;width:288px}
+  #sonde .entete{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  #sonde-titre{font-size:12.5px;font-weight:600}
+  #sonde-fermer{background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;
+      line-height:1;padding:2px 4px}
+  #sonde-fermer:hover{color:var(--text)}
+  #sonde .entete-actions{display:flex;align-items:center;gap:2px}
+  #sonde-copier{background:none;border:1px solid var(--line);border-radius:4px;
+      color:var(--muted);font-size:10.5px;cursor:pointer;padding:2px 6px;white-space:nowrap}
+  #sonde-copier:hover{color:var(--text)}
+  /* le presse-papiers n'est pas garanti (page servie en http sur le LAN, et en
+     iframe dans Home Assistant) : le champ sélectionnable est le vrai moyen */
+  /* ---- ouvertures (Home Assistant) ---- */
+  #ouvertures{right:14px;bottom:14px;padding:10px 12px;width:288px}
+  #ouvertures .entete{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  #ouvertures-titre{font-size:12.5px;font-weight:600}
+  #ouvertures-fermer{background:none;border:none;color:var(--muted);font-size:16px;
+      cursor:pointer;line-height:1;padding:2px 4px}
+  #ouvertures-fermer:hover{color:var(--text)}
+  #ouvertures-etat,#sonde-assoc-etat{font-size:11.5px;color:var(--muted);margin-top:6px;line-height:1.4}
+  #ouvertures-liste{list-style:none;margin:6px 0 0;font-size:11.5px;line-height:1.5}
+  #ouvertures-liste b{color:var(--text);font-weight:600}
+  #sonde-assoc{margin-top:8px;border-top:1px solid var(--line);padding-top:8px;
+      display:flex;flex-direction:column;gap:5px}
+  #sonde-assoc label{display:flex;align-items:center;justify-content:space-between;
+      gap:8px;font-size:11.5px}
+  #sonde-assoc input{flex:1;min-width:0;font:11px var(--font-ui);
+      padding:2px 4px;border:1px solid var(--line);border-radius:4px;
+      background:var(--panel-solid);color:var(--text)}
+  #sonde-enregistrer,#ouvertures-recalcul{margin-top:4px;padding:4px 8px;cursor:pointer;
+      font:11px var(--font-ui);border:1px solid var(--line);border-radius:4px;
+      background:var(--panel-solid);color:var(--text)}
+  #sonde-enregistrer:hover:enabled,#ouvertures-recalcul:hover:enabled{border-color:var(--accent)}
+  #sonde-enregistrer:disabled,#ouvertures-recalcul:disabled{opacity:.5;cursor:default}
+  @media (max-width:900px){#ouvertures{right:14px;bottom:auto;top:72px;width:240px}}
+  #sonde-json{width:100%;margin-top:7px;padding:4px 6px;border:1px solid var(--line);
+      border-radius:4px;background:var(--panel-solid);color:var(--text);
+      font:10px var(--font-data)}
+  #sonde-frise{width:100%;height:18px;border-radius:4px;border:1px solid var(--line);margin-top:7px;display:block}
+  .frise-heures{display:flex;justify-content:space-between;color:var(--muted);
+      font:9.5px var(--font-data);margin-top:2px}
+  #sonde-info{font-size:11.5px;color:var(--muted);margin-top:6px;line-height:1.4}
+  #sonde-info b{color:var(--text)}
+  @media (max-width:1380px){#sonde{bottom:180px}}
+  @media (max-width:900px){#sonde{bottom:auto;top:72px;left:14px;width:240px}}
+
+  /* ---- timeline ---- */
+  #timeline{left:50%;transform:translateX(-50%);bottom:14px;width:min(740px,calc(100vw - 24px));
+            padding:12px 16px 12px;display:flex;flex-direction:column;gap:8px}
+  .ligne{display:flex;align-items:center;gap:12px}
+  .lectures{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;font-family:var(--font-data);
+            font-variant-numeric:tabular-nums}
+  #lect-heure{font-size:24px;font-weight:500;color:var(--accent);min-width:118px}
+  #lect-date{font-size:13px;color:var(--text);text-transform:capitalize;flex:1}
+  .astro{font-size:11.5px;color:var(--muted);display:flex;gap:12px;flex-wrap:wrap}
+  .astro b{color:var(--text);font-weight:500}
+
+  #btn-lecture{width:38px;height:38px;border-radius:50%;border:1px solid var(--line);flex:none;
+               background:var(--accent);color:var(--accent-ink);cursor:pointer;display:flex;
+               align-items:center;justify-content:center;transition:filter .15s}
+  #btn-lecture:hover{filter:brightness(1.12)}
+  #btn-lecture svg{width:15px;height:15px;display:block}
+
+  /* chevron de repli de la timeline, visible uniquement sur écran contraint */
+  #btn-replier{display:none;background:none;border:none;color:var(--muted);cursor:pointer;
+               width:32px;height:32px;align-items:center;justify-content:center;flex:none;padding:0;
+               margin-left:auto}
+  #btn-replier svg{width:16px;height:16px;transition:transform .15s}
+  #timeline.replie #btn-replier svg{transform:rotate(180deg)}
+
+  .curseur{position:relative;flex:1;height:26px;display:flex;align-items:center}
+  .piste{position:absolute;inset:8px 0;border-radius:5px;border:1px solid var(--line)}
+  input[type=range]{position:relative;width:100%;appearance:none;-webkit-appearance:none;
+                    background:transparent;height:26px;cursor:pointer;z-index:2}
+  input[type=range]::-webkit-slider-thumb{appearance:none;-webkit-appearance:none;width:14px;height:26px;
+      border-radius:5px;background:var(--text);border:2px solid var(--panel-solid);box-shadow:0 0 0 1px var(--line)}
+  input[type=range]::-moz-range-thumb{width:12px;height:24px;border-radius:5px;background:var(--text);
+      border:2px solid var(--panel-solid)}
+  input[type=range]:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+  .rangee-date{display:flex;align-items:center;gap:10px}
+  .rangee-date .curseur{height:20px}
+  .rangee-date .piste{inset:6px 0;background:linear-gradient(90deg,#2c3947 0%,#3d5a45 25%,#57764e 50%,#3d5a45 75%,#2c3947 100%)}
+  .rangee-date input[type=range]::-webkit-slider-thumb{height:20px}
+  .tick{position:absolute;top:2px;bottom:2px;width:1px;background:rgba(239,236,227,.45);z-index:1}
+  .presets{display:flex;gap:6px}
+  .presets button{background:none;border:1px solid var(--line);color:var(--muted);font:500 10.5px var(--font-ui);
+                  letter-spacing:.04em;border-radius:6px;padding:3px 7px;cursor:pointer;white-space:nowrap}
+  .presets button:hover{color:var(--text);border-color:var(--muted)}
+
+  #chargement{position:absolute;inset:0;background:var(--bg);display:flex;flex-direction:column;gap:14px;
+              align-items:center;justify-content:center;z-index:10;transition:opacity .4s}
+  #chargement .t{font-family:var(--font-title);font-size:21px;font-weight:700}
+  #chargement .s{color:var(--muted);font-size:13px;font-family:var(--font-data)}
+  #chargement .soleil{width:42px;height:42px;border-radius:50%;background:var(--or);
+      box-shadow:0 0 40px 8px rgba(240,179,71,.45);animation:pulse 1.6s ease-in-out infinite}
+  @keyframes pulse{50%{box-shadow:0 0 60px 16px rgba(240,179,71,.6)}}
+  @media (prefers-reduced-motion: reduce){#chargement .soleil{animation:none}}
+
+  #contexte-perdu{top:50%;left:50%;transform:translate(-50%,-50%);z-index:9;
+      max-width:min(400px,86vw);padding:16px 18px;text-align:center;font-size:13px;line-height:1.5}
+  #contexte-perdu[hidden]{display:none}
+  #contexte-perdu .t{font-family:var(--font-title);font-size:15px;font-weight:700;margin-bottom:6px}
+  #contexte-perdu button{margin-top:12px;background:none;border:1px solid var(--line);color:var(--text);
+      font:500 12px var(--font-ui);border-radius:6px;padding:5px 12px;cursor:pointer}
+  #contexte-perdu button:hover{border-color:var(--muted)}
+
+  /* ---- écrans contraints : téléphone portrait ou fenêtre basse (paysage) ---- */
+  @media (max-width:640px),(max-height:520px){
+    #titre{max-width:270px;padding:8px 10px 7px;top:8px;left:calc(8px + env(safe-area-inset-left))}
+    #btn-menu{top:8px;left:calc(8px + env(safe-area-inset-left))}
+    :host([data-etroit]) #titre{top:56px;left:calc(8px + env(safe-area-inset-left))}
+    #titre h1{font-size:15px}
+    #titre .lieu{font-size:11px;margin-top:2px}
+    #titre .credit{display:none}
+    #boussole{top:8px;right:calc(8px + env(safe-area-inset-right))}
+    #btn-reglages{display:flex;top:64px;right:calc(8px + env(safe-area-inset-right))}
+    #reglages{display:none;top:112px;right:calc(8px + env(safe-area-inset-right));
+              background:var(--panel-solid);overflow-y:auto;
+              max-height:calc(100vh - 124px);
+              max-height:calc(100dvh - 124px - env(safe-area-inset-bottom))}
+    #reglages.ouvert{display:flex}
+    #btn-replier{display:flex}
+    #timeline{bottom:calc(8px + env(safe-area-inset-bottom));padding:8px 12px;gap:6px;
+              width:min(740px,calc(100vw - 16px - env(safe-area-inset-left) - env(safe-area-inset-right)))}
+    #timeline.replie .ligne-heure,#timeline.replie .rangee-date,#timeline.replie .astro{display:none}
+    #lect-heure{font-size:20px;min-width:96px}
+    .astro{font-size:10.5px;gap:6px 10px}
+    .presets button{padding:3px 5px;font-size:9.5px}
+    #sonde{bottom:auto;top:76px;left:calc(8px + env(safe-area-inset-left));width:240px}
+  }
+  /* fenêtre vraiment basse (téléphone en paysage) : une seule ligne partout */
+  @media (max-height:520px){
+    #titre .lieu{display:none}
+    .astro{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+    .astro span{white-space:nowrap;flex:none}
+    #btn-lecture{width:32px;height:32px}
+  }
+  /* cibles tactiles élargies */
+  @media (pointer:coarse){
+    .curseur{height:32px}
+    input[type=range]{height:32px}
+    input[type=range]::-webkit-slider-thumb{width:20px;height:30px}
+    input[type=range]::-moz-range-thumb{width:18px;height:28px}
+    .piste{inset:10px 0}
+    .rangee-date .curseur{height:26px}
+    .rangee-date .piste{inset:8px 0}
+    .rangee-date input[type=range]::-webkit-slider-thumb{height:26px}
+  }
+</style>
+
+<div id="chargement" role="status">
+  <div class="soleil"></div>
+  <div class="t" id="charge-titre">Ensoleillement</div>
+  <div class="s" id="charge-etat">Décompression des données…</div>
+</div>
+
+<canvas id="scene" aria-label="Vue 3D du quartier avec ombres portées"></canvas>
+
+<div id="contexte-perdu" class="panel" role="alert" hidden>
+  <div class="t">Vue 3D interrompue</div>
+  <div>La mémoire graphique de l'appareil est saturée. Recharger la page, puis
+    choisir une carte plus légère (Satellite ou Maquette) ou des ombres moins fines.</div>
+  <button type="button" id="btn-recharger">Recharger</button>
+</div>
+
+<div id="titre" class="panel">
+  <h1 id="titre-h1">Ensoleillement</h1>
+  <div class="lieu" id="titre-lieu"></div>
+  <div class="credit"><b>Données</b> : Eurométropole de Strasbourg — Maquette 3D 2022
+    (bâtiments LoD2 texturés, MNT LiDAR drapé de l'orthophotographie 2022, végétation)
+    et filaire de circulation — Licence Ouverte. Photomaillage 3D 2022 produit
+    avec le soutien du FEDER et de DataGrandEst.
+    Position solaire : algorithme NOAA. Heure légale France.</div>
+</div>
+
+<div id="boussole" class="panel" title="Remettre le nord en haut" role="button" tabindex="0" aria-label="Boussole : remettre le nord en haut">
+  <svg viewBox="0 0 40 40" id="boussole-svg" aria-hidden="true">
+    <circle class="cadran" cx="20" cy="20" r="18" fill="none"/>
+    <path class="aig-n" d="M20 5 L24 22 L20 19 L16 22 Z"/>
+    <path class="aig-s" d="M20 35 L24 22 L20 25 L16 22 Z"/>
+    <text class="n" x="20" y="13" text-anchor="middle">N</text>
+  </svg>
+</div>
+
+<button id="btn-menu" class="panel" aria-label="Ouvrir le menu de Home Assistant">
+  <svg viewBox="0 0 24 24" aria-hidden="true">
+    <g stroke="currentColor" stroke-width="2" stroke-linecap="round">
+      <line x1="4" y1="7" x2="20" y2="7"/>
+      <line x1="4" y1="12" x2="20" y2="12"/>
+      <line x1="4" y1="17" x2="20" y2="17"/>
+    </g>
+  </svg>
+</button>
+
+<button id="btn-reglages" class="panel" aria-label="Ouvrir ou fermer les réglages" aria-expanded="false">
+  <svg viewBox="0 0 20 20" aria-hidden="true">
+    <g stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+      <line x1="3" y1="5.5" x2="17" y2="5.5"/>
+      <line x1="3" y1="10" x2="17" y2="10"/>
+      <line x1="3" y1="14.5" x2="17" y2="14.5"/>
+    </g>
+    <g fill="currentColor" stroke="var(--panel-solid)" stroke-width="1.5">
+      <circle cx="7" cy="5.5" r="2.6"/><circle cx="13.5" cy="10" r="2.6"/><circle cx="9" cy="14.5" r="2.6"/>
+    </g>
+  </svg>
+</button>
+
+<div id="reglages" class="panel">
+  <label>Thème <select id="opt-theme" aria-label="Thème de l'interface">
+    <option value="auto" selected>Auto</option><option value="dark">Sombre</option>
+    <option value="light">Clair</option></select></label>
+  <label>Ombres <select id="opt-ombres" aria-label="Qualité des ombres"
+    title="En Photo 3D la carte d'ombre est plafonnée à « Fines » : le maillage photogrammétrique, d'arête ~40 cm, ne porte aucun détail plus fin, et la mémoire économisée est considérable.">
+    <option value="2048">Rapides</option><option value="4096" selected>Fines</option>
+    <option value="8192">Très fines</option></select></label>
+  <label class="carte">Carte
+    <select id="opt-carte" aria-label="Type de carte"
+      title="Photo 3D : photomaillage photogrammétrique 2022 sur 200 m, posé sur la vue satellite au-delà. Vue faite pour la plongée : de près, la photogrammétrie aérienne est floue.">
+    <option value="abstrait" selected>Maquette</option><option value="satellite">Satellite</option>
+    <option value="photo">Photo 3D</option></select>
+    <span id="etat-carte" class="etat"></span></label>
+  <label>Arbres <input type="checkbox" id="opt-arbres" checked></label>
+  <label>Trajet du soleil <input type="checkbox" id="opt-trajet" checked></label>
+  <label>Ø trajet <input type="range" id="opt-trajet-r" min="100" max="2600" step="20" value="2600"
+    aria-label="Diamètre du trajet du soleil"></label>
+  <label title="Dépose un carré de 50 cm de côté à plat sur la surface visée (sol, façade, vitrage, pan de toit) et compte le soleil direct de la journée sur ce carré.">Sonde au clic <input type="checkbox" id="opt-sonde"></label>
+  <label id="lbl-ouvertures" hidden
+    title="Associe les fenêtres sondées aux volets roulants de Home Assistant et y publie leur masque d'horizon.">Ouvertures HA <input type="checkbox" id="opt-ouvertures"></label>
+  <label title="Normales : un doigt (ou le clic gauche) fait tourner la vue. Inversées : un doigt déplace la carte, comme dans une application de cartographie, et la rotation passe à deux doigts ou au clic droit.">Commandes <select id="opt-commandes" aria-label="Sens des commandes de navigation">
+    <option value="normales" selected>Normales</option>
+    <option value="inversees">Inversées</option></select></label>
+  <label>Vitesse <select id="opt-vitesse" aria-label="Vitesse d'animation">
+    <option value="2">2 min/s</option><option value="10" selected>10 min/s</option>
+    <option value="30">30 min/s</option><option value="90">90 min/s</option></select></label>
+</div>
+
+<div id="badge-soleil" class="sur-scene" aria-hidden="true"></div>
+<div id="eti-lever" class="sur-scene eti-solaire" aria-hidden="true"></div>
+<div id="eti-coucher" class="sur-scene eti-solaire" aria-hidden="true"></div>
+
+<div id="sonde" class="panel" hidden>
+  <div class="entete">
+    <span id="sonde-titre">Sonde</span>
+    <span class="entete-actions">
+      <button id="sonde-copier" title="Copie les coordonnées du point sondé, pour ouvertures.json">Copier le point</button>
+      <button id="sonde-fermer" aria-label="Fermer la sonde">×</button>
+    </span>
+  </div>
+  <input id="sonde-json" type="text" readonly hidden
+         aria-label="Coordonnées du point sondé">
+  <canvas id="sonde-frise" width="264" height="18" aria-label="Frise des créneaux au soleil"></canvas>
+  <div class="frise-heures" aria-hidden="true"><span>0h</span><span>6h</span><span>12h</span><span>18h</span><span>24h</span></div>
+  <div id="sonde-info"></div>
+  <div id="sonde-assoc" hidden>
+    <label>Volet <input type="text" id="sonde-volet" list="liste-volets"
+      placeholder="cover.…" aria-label="Volet desservi"></label>
+    <datalist id="liste-volets"></datalist>
+    <label>Nom <input type="text" id="sonde-nom" aria-label="Nom de l'ouverture"></label>
+    <button id="sonde-enregistrer">Publier dans Home Assistant</button>
+    <div id="sonde-assoc-etat"></div>
+  </div>
+</div>
+
+<div id="ouvertures" class="panel" hidden>
+  <div class="entete">
+    <span id="ouvertures-titre">Ouvertures — Home Assistant</span>
+    <button id="ouvertures-fermer" aria-label="Fermer le panneau des ouvertures">×</button>
+  </div>
+  <div id="ouvertures-etat"></div>
+  <ul id="ouvertures-liste"></ul>
+  <button id="ouvertures-recalcul"
+    title="Rejoue les points mémorisés et republie tous les masques : à faire après un changement de géométrie.">Tout recalculer</button>
+</div>
+
+<div id="timeline" class="panel">
+  <div class="ligne">
+    <button id="btn-lecture" aria-label="Lancer ou arrêter l'animation">
+      <svg id="ico-lecture" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 1.5 L14 8 L3 14.5 Z" fill="currentColor"/></svg>
+    </button>
+    <div class="lectures">
+      <span id="lect-heure">—:—</span>
+      <span id="lect-date">—</span>
+    </div>
+    <button id="btn-replier" aria-label="Replier ou déployer les contrôles" aria-expanded="true">
+      <svg viewBox="0 0 16 16" aria-hidden="true">
+        <path d="M2.5 6 L8 11 L13.5 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+  </div>
+  <div class="ligne ligne-heure">
+    <div class="curseur">
+      <div class="piste" id="piste-jour"></div>
+      <input type="range" id="curseur-heure" min="0" max="1439" step="1" value="720"
+             aria-label="Heure de la journée">
+    </div>
+  </div>
+  <div class="rangee-date">
+    <div class="curseur">
+      <div class="piste"></div>
+      <div class="tick" style="left:21.9%" title="Équinoxe de mars"></div>
+      <div class="tick" style="left:47.1%" title="Solstice de juin"></div>
+      <div class="tick" style="left:72.6%" title="Équinoxe de septembre"></div>
+      <div class="tick" style="left:97.3%" title="Solstice de décembre"></div>
+      <input type="range" id="curseur-jour" min="0" max="364" step="1" value="0"
+             aria-label="Jour de l'année">
+    </div>
+    <div class="presets">
+      <button id="btn-aujourdhui" title="Revenir à la date et l'heure actuelles">AUJOURD'HUI</button>
+      <button data-jm="21-6" title="Solstice d'été">21 JUIN</button>
+      <button data-jm="20-3" title="Équinoxe (course du soleil identique en mars et septembre)">ÉQUINOXE</button>
+      <button data-jm="21-12" title="Solstice d'hiver">21 DÉC</button>
+    </div>
+  </div>
+  <div class="astro">
+    <span>Azimut <b id="lect-azimut">—</b></span>
+    <span>Élévation <b id="lect-elevation">—</b></span>
+    <span>Lever <b id="lect-lever">—</b></span>
+    <span>Midi solaire <b id="lect-midi">—</b></span>
+    <span>Coucher <b id="lect-coucher">—</b></span>
+    <span id="wrap-ombre">Ombre <b id="lect-ombre">—</b></span>
+  </div>
+</div>

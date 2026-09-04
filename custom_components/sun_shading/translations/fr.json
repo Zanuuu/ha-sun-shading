@@ -1,0 +1,264 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Sun Shading",
+        "description": "Sun Shading simule les ombres que portent sur vos fenêtres les bâtiments, le relief et les arbres réels qui les entourent, à partir de l'open data 3D de l'Eurométropole de Strasbourg.\n\nConstruire une zone télécharge quelques gigaoctets de dalles 3D et prend des dizaines de minutes — l'écran suivant annonce le nombre de dalles, le disque occupé et la durée sur cette machine. L'entrée est créée tout de suite : le panneau et un capteur d'avancement apparaissent immédiatement, et la carte s'ouvre à la fin de la construction.",
+        "menu_options": {
+          "build": "Construire une zone à partir de coordonnées",
+          "external": "Utiliser des données construites hors de Home Assistant"
+        }
+      },
+      "build": {
+        "title": "Zone à simuler",
+        "description": "La carte est centrée sur ce point, prérempli avec la position de Home Assistant. Seule l'Eurométropole de Strasbourg est couverte par les données sources.",
+        "data": {
+          "location": "Centre et rayon affiché",
+          "title": "Nom de la zone"
+        },
+        "data_description": {
+          "location": "Le rayon commande tout le reste : 500 m ≈ 9 dalles et ~1 Go téléchargés, 1000 m ≈ 29 dalles et ~3 Go, 1500 m ≈ 60 dalles et ~6 Go. Bâtiments, terrain et textures débordent un peu, pour que les ombres venues d'à côté tombent quand même sur la carte.",
+          "title": "Affiché dans la barre latérale ; sert aussi à nommer les entités et le dossier de données."
+        },
+        "sections": {
+          "advanced": {
+            "name": "Avancé",
+            "description": "Laisser vide pour tout déduire du rayon ci-dessus.",
+            "data": {
+              "photomesh": "Mode Photo 3D (photomaillage)",
+              "photomesh_radius": "Rayon du photomaillage",
+              "ortho_px": "Résolution de l'orthophotographie",
+              "shadow_lift": "Relèvement des ombres cuites",
+              "obj_path": "Modèle précis de toiture (fichier OBJ)",
+              "r_bati": "Rayon des bâtiments",
+              "r_terrain": "Rayon du terrain",
+              "r_arbres": "Rayon des arbres",
+              "r_textures": "Rayon des façades texturées",
+              "r_mnt_natif": "Rayon du terrain à résolution native"
+            },
+            "data_description": {
+              "photomesh": "De loin l'option la plus lourde : environ 1 Go téléchargé et 20 à 30 minutes pour 200 m, plus ~370 Mo de mémoire graphique quand on l'active dans la carte. Désactivée par défaut.",
+              "photomesh_radius": "200 m est la valeur éprouvée ; le coût croît comme le carré du rayon.",
+              "ortho_px": "8192 px ≈ 44 cm/px et 169 Mo de mémoire graphique une fois décodée ; 4096 px coûte quatre fois moins et devient flou de près.",
+              "shadow_lift": "L'imagerie 2022 porte les ombres du jour de la prise de vue, qui s'ajoutent aux ombres simulées. 0,78 les relève ; 1 les laisse intactes.",
+              "obj_path": "Chemin relatif au dossier de configuration. Remplace la toiture simplifiée d'un bâtiment par une toiture modelée à la main (voir la documentation du dépôt).",
+              "r_bati": "Laisser 0 pour déduire : rayon affiché + 50 m, pour que les ombres nées juste hors carte y tombent quand même.",
+              "r_terrain": "Laisser 0 pour déduire : rayon affiché + 80 m, pour ne jamais montrer le bord du monde.",
+              "r_arbres": "Laisser 0 pour déduire : le rayon affiché.",
+              "r_textures": "Laisser 0 pour déduire : rayon affiché + 50 m. N'affecte que la vue satellite.",
+              "r_mnt_natif": "Terrain gardé à sa résolution native jusqu'ici, aggloméré sur une grille de 10 m au-delà. Laisser 0 pour 500 m."
+            }
+          }
+        }
+      },
+      "estimate": {
+        "title": "Avant de construire « {title} »",
+        "description": "Dalles à lire : {tiles} (maquette 3D){photo_tiles_line}\nTéléchargement : environ {download_gb} Go, conservés dans config/sun_shading/cache/ ({cache_gb} Go), pour qu'une reconstruction ne coûte rien\nDonnées produites : environ {disk_mb} Mo\nDurée estimée sur cette machine : {duration}\n\nLa construction tourne en tâche de fond : vous pouvez fermer cette fenêtre, la suivre sur le capteur « état de construction », et le panneau en affiche l'avancement. Rien n'est retéléchargé lors d'une reconstruction."
+      },
+      "external": {
+        "title": "Données construites hors de Home Assistant",
+        "description": "Désigner un dossier produit par le pipeline (python3 sources/build.py --zone …), relatif au dossier de configuration. Il doit contenir manifest.json.",
+        "data": {
+          "folder": "Dossier des données",
+          "title": "Nom de la zone"
+        },
+        "data_description": {
+          "folder": "Par exemple sun_shading/ma-zone — y copier tout le contenu de dist/."
+        }
+      },
+      "reconfigure": {
+        "title": "Zone à simuler",
+        "description": "Changer la position, le rayon ou un réglage avancé reconstruit la zone ; les dalles déjà téléchargées sont réutilisées.",
+        "data": {
+          "location": "Centre et rayon affiché",
+          "title": "Nom de la zone"
+        },
+        "data_description": {
+          "location": "Le rayon commande tout le reste : 500 m ≈ 9 dalles et ~1 Go téléchargés, 1000 m ≈ 29 dalles et ~3 Go, 1500 m ≈ 60 dalles et ~6 Go.",
+          "title": "Affiché dans la barre latérale ; sert aussi à nommer les entités et le dossier de données."
+        },
+        "sections": {
+          "advanced": {
+            "name": "Avancé",
+            "description": "Laisser vide pour tout déduire du rayon ci-dessus.",
+            "data": {
+              "photomesh": "Mode Photo 3D (photomaillage)",
+              "photomesh_radius": "Rayon du photomaillage",
+              "ortho_px": "Résolution de l'orthophotographie",
+              "shadow_lift": "Relèvement des ombres cuites",
+              "obj_path": "Modèle précis de toiture (fichier OBJ)",
+              "r_bati": "Rayon des bâtiments",
+              "r_terrain": "Rayon du terrain",
+              "r_arbres": "Rayon des arbres",
+              "r_textures": "Rayon des façades texturées",
+              "r_mnt_natif": "Rayon du terrain à résolution native"
+            },
+            "data_description": {
+              "photomesh": "De loin l'option la plus lourde : environ 1 Go téléchargé et 20 à 30 minutes pour 200 m, plus ~370 Mo de mémoire graphique quand on l'active dans la carte. Désactivée par défaut.",
+              "photomesh_radius": "200 m est la valeur éprouvée ; le coût croît comme le carré du rayon.",
+              "ortho_px": "8192 px ≈ 44 cm/px et 169 Mo de mémoire graphique une fois décodée ; 4096 px coûte quatre fois moins et devient flou de près.",
+              "shadow_lift": "L'imagerie 2022 porte les ombres du jour de la prise de vue, qui s'ajoutent aux ombres simulées. 0,78 les relève ; 1 les laisse intactes.",
+              "obj_path": "Chemin relatif au dossier de configuration. Remplace la toiture simplifiée d'un bâtiment par une toiture modelée à la main (voir la documentation du dépôt).",
+              "r_bati": "Laisser 0 pour déduire : rayon affiché + 50 m, pour que les ombres nées juste hors carte y tombent quand même.",
+              "r_terrain": "Laisser 0 pour déduire : rayon affiché + 80 m, pour ne jamais montrer le bord du monde.",
+              "r_arbres": "Laisser 0 pour déduire : le rayon affiché.",
+              "r_textures": "Laisser 0 pour déduire : rayon affiché + 50 m. N'affecte que la vue satellite.",
+              "r_mnt_natif": "Terrain gardé à sa résolution native jusqu'ici, aggloméré sur une grille de 10 m au-delà. Laisser 0 pour 500 m."
+            }
+          }
+        }
+      },
+      "reconfigure_external": {
+        "title": "Données construites hors de Home Assistant",
+        "description": "Désigner un dossier produit par le pipeline, relatif au dossier de configuration.",
+        "data": {
+          "folder": "Dossier des données",
+          "title": "Nom de la zone"
+        }
+      }
+    },
+    "error": {
+      "out_of_coverage": "Aucune dalle 3D ne couvre ce point : les données sources ne couvrent que l'Eurométropole de Strasbourg.",
+      "radius_out_of_range": "Le rayon doit être compris entre 100 m et 1500 m (au-delà, le repère local quantifié déborde).",
+      "obj_not_found": "Fichier OBJ introuvable, relativement au dossier de configuration.",
+      "no_manifest": "Aucun manifest.json dans ce dossier : ce n'est pas un dossier produit par le pipeline."
+    },
+    "abort": {
+      "already_configured": "Cette zone est déjà configurée.",
+      "reconfigure_successful": "Zone mise à jour ; elle est reconstruite si nécessaire."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Sun Shading",
+        "description": "Ces réglages s'appliquent immédiatement : rien n'est reconstruit.",
+        "data": {
+          "title": "Titre dans la barre latérale",
+          "sidebar_icon": "Icône de la barre latérale",
+          "require_admin": "Administrateurs seulement",
+          "shadow_quality": "Qualité des ombres par défaut"
+        },
+        "data_description": {
+          "require_admin": "Le panneau écrit des masques d'horizon et lit vos volets ; à laisser activé, sauf si la carte doit être consultable par tous.",
+          "shadow_quality": "2048 coûte environ 30 Mo de mémoire graphique, 4096 environ 117 Mo, 8192 environ 470 Mo — le plus gros poste de la scène. Plafonné à 4096 en mode Photo 3D. Chacun peut encore le changer dans la carte."
+        },
+        "sections": {
+          "advanced": {
+            "name": "Avancé",
+            "description": "Comment les masques sont calculés et lus.",
+            "data": {
+              "foliation": "Dates de feuillaison",
+              "threshold": "Seuil de fraction éclairée",
+              "azimuth_step": "Pas d'azimut"
+            },
+            "data_description": {
+              "foliation": "Quatre jours de l'année (1er janvier = 0) : début et fin du débourrement, début et fin de la chute des feuilles. Les feuillus laissent passer bien plus de soleil une fois nus, et les deux masques se mélangent le long de ces rampes.",
+              "threshold": "Quelle part du carré de sonde de 50 cm doit être éclairée pour déclarer « soleil direct ».",
+              "azimuth_step": "Degrés entre deux bandes d'un masque. Un pas plus fin coûte proportionnellement plus de temps au calcul d'un masque par la page (environ 2 s à 1°)."
+            }
+          }
+        }
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "direct_sun": {
+        "name": "Soleil direct {name}"
+      }
+    },
+    "sensor": {
+      "build_state": {
+        "name": "État de construction",
+        "state": {
+          "idle": "Inactif",
+          "building": "Construction en cours",
+          "done": "Terminé",
+          "error": "Erreur"
+        }
+      }
+    },
+    "button": {
+      "rebuild": {
+        "name": "Reconstruire"
+      }
+    }
+  },
+  "services": {
+    "set_opening": {
+      "name": "Définir une ouverture",
+      "description": "Crée ou met à jour le capteur « soleil direct » d'une ouverture, à partir du masque d'horizon calculé par la carte. Appelé par la page, pas destiné à la saisie manuelle.",
+      "fields": {
+        "id": {
+          "name": "Identifiant",
+          "description": "Identifiant stable de l'ouverture (minuscules, sans espace)."
+        },
+        "name": {
+          "name": "Nom",
+          "description": "Nom lisible, qui devient celui du capteur."
+        },
+        "entry_id": {
+          "name": "Zone",
+          "description": "Entrée de configuration de la zone ; obligatoire quand plusieurs sont configurées."
+        },
+        "cover": {
+          "name": "Volet",
+          "description": "Volet roulant desservant cette ouverture."
+        },
+        "point": {
+          "name": "Point",
+          "description": "Point sondé, dans le repère local de la carte (x, y, z)."
+        },
+        "normal": {
+          "name": "Normale",
+          "description": "Normale de la surface au point sondé."
+        },
+        "leafy": {
+          "name": "Masque feuillé",
+          "description": "Bandes [élévation min, max] par azimut, feuillus en feuilles."
+        },
+        "bare": {
+          "name": "Masque nu",
+          "description": "Bandes [élévation min, max] par azimut, feuillus nus."
+        },
+        "azimuth_step": {
+          "name": "Pas d'azimut",
+          "description": "Écart en degrés entre deux bandes."
+        },
+        "threshold": {
+          "name": "Seuil",
+          "description": "Fraction éclairée de l'ouverture au-delà de laquelle on déclare le soleil direct."
+        },
+        "foliation": {
+          "name": "Dates de feuillaison",
+          "description": "Quatre jours (base 0) — début et fin du débourrement, début et fin de la chute des feuilles."
+        }
+      }
+    },
+    "remove_opening": {
+      "name": "Supprimer une ouverture",
+      "description": "Retire une ouverture et son capteur.",
+      "fields": {
+        "id": {
+          "name": "Identifiant",
+          "description": "Identifiant de l'ouverture à retirer."
+        },
+        "entry_id": {
+          "name": "Zone",
+          "description": "Entrée de configuration de la zone ; obligatoire quand plusieurs sont configurées."
+        }
+      }
+    },
+    "rebuild": {
+      "name": "Reconstruire",
+      "description": "Reconstruit la zone à partir des données sources. Les dalles déjà téléchargées sont réutilisées.",
+      "fields": {
+        "entry_id": {
+          "name": "Zone",
+          "description": "Entrée de configuration de la zone ; obligatoire quand plusieurs sont configurées."
+        }
+      }
+    }
+  }
+}
