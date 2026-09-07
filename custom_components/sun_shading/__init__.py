@@ -35,7 +35,7 @@ from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.helpers.storage import Store
 from homeassistant.loader import async_get_integration
 
-from . import constructeur
+from . import constructeur, entite
 from .const import (CONF_ADMIN, CONF_FEUILLAISON, CONF_ICONE, CONF_OMBRES,
                     CONF_PAS_AZIMUT, CONF_SEUIL, CONF_TITRE, DOMAINE,
                     FEUILLAISON_DEFAUT, ICONE_PANNEAU, MODE, MODE_EXTERNE,
@@ -166,8 +166,7 @@ def _url_panneau(entry: ConfigEntry) -> str:
 
 
 async def _installe_panneau(hass: HomeAssistant, entry: ConfigEntry) -> None:
-    integration = await async_get_integration(hass, DOMAINE)
-    version = integration.version or "0"
+    version = entite.VERSION or "0"
     url = _url_panneau(entry)
     # un panneau du même chemin peut rester d'un chargement précédent
     frontend.async_remove_panel(hass, url, warn_if_unknown=False)
@@ -270,6 +269,11 @@ async def _installe_services(hass: HomeAssistant) -> None:
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    # la version du manifest sert deux fois : elle date l'appareil dans Home
+    # Assistant et sert de cache busting au module du panneau
+    integration = await async_get_integration(hass, DOMAINE)
+    entite.VERSION = str(integration.version) if integration.version else None
+
     depot = Depot(hass, entry.entry_id)
     await depot.charge()
     hass.data.setdefault(DOMAINE, {})[entry.entry_id] = Donnees(depot=depot)

@@ -63,6 +63,24 @@ async def test_panneau_et_entites(hass: HomeAssistant, tmp_path):
     assert hass.states.get("button.maison_rebuild") is None
 
 
+async def test_appareil_identifie_l_auteur_et_la_version(hass: HomeAssistant, tmp_path):
+    """La carte de l'appareil nomme l'AUTEUR de l'intégration et la version
+    installée. Deux pièges vécus : le fabricant portait la source des données
+    (l'Eurométropole n'écrit pas cette intégration ; son crédit est dans la
+    page), et sans `sw_version` rien n'indique la version dans Home Assistant
+    — HACS n'affiche qu'un numéro de commit tant que le dépôt n'a pas de
+    release."""
+    from homeassistant.helpers import device_registry as dr
+
+    entry, _ = await entree_externe(hass, tmp_path)
+    appareil = dr.async_get(hass).async_get_device(
+        identifiers={(DOMAINE, entry.entry_id)})
+    assert appareil is not None, "aucun appareil créé pour l'entrée"
+    assert appareil.manufacturer == "Zanuuu"
+    manifest = json.load(open("custom_components/sun_shading/manifest.json"))
+    assert appareil.sw_version == manifest["version"]
+
+
 async def test_service_publie_une_ouverture(hass: HomeAssistant, tmp_path):
     """Le contrat de la page : un appel de service crée le capteur, avec les
     attributs que la carte relit pour se reconnaître et tout recalculer."""

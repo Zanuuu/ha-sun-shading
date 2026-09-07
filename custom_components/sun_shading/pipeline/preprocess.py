@@ -23,6 +23,7 @@ import urllib.parse
 import urllib.request
 import zipfile
 
+from . import complement_bdtopo
 from . import zone as zones
 from .progression import Progression
 
@@ -304,9 +305,9 @@ class InterpolateurTIN:
         raise ValueError(f"aucun sommet MNT près de ({x:.0f}, {y:.0f})")
 
 
-def construit_routes(mnt):
-    """Rubans de voirie drapés sur le MNT. Retourne (accum asphalte, accum terre)."""
-    tin = InterpolateurTIN(mnt.verts, mnt.tris, CX, CY)
+def construit_routes(tin):
+    """Rubans de voirie drapés sur le MNT (InterpolateurTIN, partagé avec le
+    complément BD TOPO). Retourne (accum asphalte, accum terre)."""
 
     def z_sol(x, y):
         return tin.z(x, y) + Z_ROUTE
@@ -439,9 +440,22 @@ def construit(z, progression=None):
         print(tile, "ok — bati v:", len(bati.verts), "mnt v:", len(mnt.verts),
               "arbres:", len(trees))
 
-    progression.etape("drapage de la voirie", 0.85, 0.92)
+    # le TIN sert au drapage de la voirie ET au sol des bâtiments ajoutés ;
+    # construit sur le MNT natif, avant sa décimation lointaine
+    tin = InterpolateurTIN(mnt.verts, mnt.tris, CX, CY)
+
+    # bâtiments postérieurs à la maquette 2022 (BD TOPO), sauf refus explicite
+    complement = None
+    if (ZONE.cfg.get("complement") or {}).get("bdtopo", True):
+        progression.etape("bâtiments récents (BD TOPO)", 0.85, 0.88)
+        print("complément BD TOPO…")
+        complement = complement_bdtopo.construit(
+            ZONE, bati, tin, CX, CY, progression,
+            cache=os.path.join(CACHE, f"bdtopo-{ZONE.nom}.geojson"))
+
+    progression.etape("drapage de la voirie", 0.88, 0.92)
     print("drapage de la voirie…")
-    asphalte, terre = construit_routes(mnt)
+    asphalte, terre = construit_routes(tin)
     print("voirie : asphalte", len(asphalte.verts), "v /", len(asphalte.tris),
           "tris ; terre", len(terre.verts), "v /", len(terre.tris), "tris")
 
@@ -487,6 +501,8 @@ def construit(z, progression=None):
         "r_arbres": R_TREES,
         "sections": sections,
     }
+    if complement is not None:
+        meta["complement"] = complement
     with gzip.open(os.path.join(DONNEES, "donnees.bin.gz"), "wb",
                    compresslevel=9) as f:
         f.write(out)

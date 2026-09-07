@@ -2,7 +2,7 @@
   "name": "ha-sun-shading",
   "private": true,
   "scripts": {
-    "test": "export ZONE=${ZONE:-strasbourg-cathedrale} && python3 tests/test_masque.py && playwright test",
+    "test": "export ZONE=${ZONE:-strasbourg-cathedrale} && python3 tests/test_masque.py && python3 tests/test_complement.py && playwright test",
     "test:page": "export ZONE=${ZONE:-strasbourg-cathedrale} && playwright test",
     "test:integration": "python3 -m pytest"
   },

@@ -34,6 +34,7 @@ CONF_PHOTO_RAYON = "photomesh_radius"
 CONF_ORTHO_PX = "ortho_px"
 CONF_RELEVE_OMBRES = "shadow_lift"
 CONF_OBJ = "obj_path"
+CONF_COMPLEMENT = "bdtopo"          # bâtiments récents depuis la BD TOPO (IGN)
 
 # ---- options (aucune reconstruction) ----
 CONF_ICONE = "sidebar_icon"

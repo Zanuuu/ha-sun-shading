@@ -41,6 +41,22 @@ le contrat public (domaine, services, attributs, chemins HTTP) est en
   1000 m, bâtiments/ponts 1050, terrain 1080, arbres 1000 ; MNT natif
   jusqu'à 500 m puis aggloméré (grille 10 m) pour tenir le budget. Tout est
   plafonné à ~1600 m par la quantification int16.
+- `pipeline/complement_bdtopo.py` (07/09/2026) — bâtiments absents de la
+  maquette 2022 : lit la BD TOPO de l'IGN (WFS `data.geopf.fr`,
+  `BDTOPO_V3:batiment`, réponse demandée directement en EPSG:3948, CQL
+  `DWITHIN` en lat lon, pagination `COUNT`/`STARTINDEX`) dans le rayon bâti,
+  repère les emprises qu'aucune face montante du LoD2 ne couvre et les
+  extrude dans la section `bati` (donc BVH, sonde, ombres et `retire_lod2`
+  inchangés, aucun changement du format binaire). Appelé par
+  `preprocess.construit()` avant la voirie, avec l'`InterpolateurTIN`
+  désormais construit une fois et partagé ; compte rendu dans
+  `meta.json › complement` (`tris` = plage contiguë en fin de section,
+  `batiments`, `ignores`). Retéléchargé à chaque construction (2-3 Mo : la
+  fraîcheur est tout l'intérêt), copie en cache relue seulement si le réseau
+  manque, et la zone n’échoue jamais pour ce flux. Désactivable par
+  `zone.json › complement.bdtopo: false` (case de la section avancée du
+  config flow, `CONF_COMPLEMENT`). Tests : `tests/test_complement.py`
+  (stdlib, sans réseau, dans `npm test`).
 - `pipeline/preprocess_sat.py` — atlas orthophoto + atlas façades →
   `ortho.webp`, `atlas*.webp`, `sat.bin.gz`, `sat_meta.json`. Demi-étendue
   de l'atlas terrain = rayon terrain + 40 m.
@@ -225,6 +241,39 @@ le contrat public (domaine, services, attributs, chemins HTTP) est en
   sol et le toit se hérisse de lames verticales. Le volume doit descendre
   franchement sous le terrain : la technique d'ombre (BackSide, sans
   auto-ombrage) décollerait sinon les ombres du pied des murs conservés.
+- Complément BD TOPO, le pourquoi des choix (07/09/2026). **`hauteur` de la
+  BD TOPO est la hauteur à l'ÉGOUT** (= `altitude_minimale_toit −
+  altitude_minimale_sol`, vérifié sur des bâtiments d'Ostwald), et
+  `altitude_maximale_toit` donne le faîte. D'où le volume « LoD1.5 » : murs
+  jusqu'à l'égout (sol MNT + hauteur — le terrain de la carte fait foi, pas
+  l'altitude IGN), puis tronc de toit homothétique montant au faîte à 35°
+  (`PENTE`, convention ; largeur estimée par 4·aire/périmètre ; facteur nul
+  → pyramide à un sommet). Une boîte au faîte surestimerait l'ombre, une
+  boîte à l'égout la sous-estimerait de 5 m par mètre de montée au soleil
+  d'hiver ; et les murs à l'égout exact permettent à un OBJ de toiture de se
+  poser dessus par le mécanisme du modèle précis (le tronc a nz = 0,82 >
+  `nz_min`, `retire_lod2` l'enlève et garde les murs — tenu par un test).
+  Enroulement imposé par construction (anneau trigonométrique → normales
+  sortantes), pas de `Mesh.oriente()` ni de numpy. **Détection sur
+  l'intérieur érodé** (`MARGE_BORD` 1,5 m) : les emprises IGN et LoD2
+  diffèrent d'un mètre ou deux, et sur Ostwald la fraction brute classait
+  80 emprises sur 480 « partielles », dont 57 par ce seul effet de bord.
+  Seuils 0,15 / 0,85 ; les partiels sont ignorés et journalisés, jamais
+  devinés. **`AIRE_MIN` = 20 m²** : le LoD2 n'est pas exhaustif sur les
+  annexes (mesuré sur trois zones : 15 % d'emprises absentes sous 30 m²,
+  1 % au-dessus de 60 m²) ; sans ce seuil, une zone résidentielle de
+  référence gagnait 123 volumes, dont des abris de 3 m² à 50 m du centre —
+  l'objet est « bâtiments récents », pas « abris de jardin », et la grille
+  d'occupation à 1 m n'est plus fiable à cette taille. Masques d'une fenêtre
+  de toit de cette zone identiques au bit près avec ou sans ces ajouts. Trois modes à tenir sinon la maison neuve disparaît en changeant
+  de fond : `preprocess_sat` verse la plage `complement.tris` dans
+  `bati_reste` (la vue satellite cache `batiMesh`), `extrait_pm3d` l'exempte
+  de `composantes_retirees` (le photomaillage 2022 ne la remplace pas).
+  Import OBJ : `composante_lod2()` exige un sommet LoD2 à moins de
+  `DISTANCE_MAX` = 25 m du point, sinon retrait vide et modèle AJOUTÉ —
+  avant cela, un OBJ pour une maison absente supprimait la toiture du
+  voisin en silence. Limite assumée : une maison plus récente que la BD TOPO
+  n'est dans aucune source.
 - Orientation des faces : ne pas se fier aux conventions d'enroulement, elles
   se contredisent d'un volume à l'autre. `Mesh.oriente()` retourne les faces
   par **test de parité, composante connexe par composante connexe** — un rayon
@@ -372,7 +421,8 @@ le contrat public (domaine, services, attributs, chemins HTTP) est en
   un bundle redistribué.
 - Données : Eurométropole de Strasbourg, Licence Ouverte 2.0 — crédit affiché
   en permanence dans la page (`page-template.html`), photomaillage mentionné
-  avec le soutien FEDER / DataGrandEst. Position solaire : NOAA, domaine
+  avec le soutien FEDER / DataGrandEst ; IGN BD TOPO (Licence Ouverte 2.0)
+  pour les bâtiments postérieurs à 2022, créditée au même endroit. Position solaire : NOAA, domaine
   public. Playwright (Apache-2.0) et pytest-homeassistant-custom-component ne
   servent qu'aux tests. Aucune police ni ressource externe n'est chargée.
 

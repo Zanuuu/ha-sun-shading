@@ -302,6 +302,15 @@ def extrait(dalles, buf_donnees, buf_sat, sat_meta, gamma, progression):
     retire = {}
     pos_b, tris_b = lit_section_mesh(buf_donnees, META["sections"]["bati"])
     bati_remplaces = composantes_retirees(pos_b, tris_b, R, r_ext=R_EXT)
+    # les bâtiments ajoutés depuis la BD TOPO sont postérieurs au
+    # photomaillage 2022 : rien ne les y remplace, ils restent
+    plage = (META.get("complement") or {}).get("tris")
+    if plage:
+        avant = len(bati_remplaces)
+        bati_remplaces = [t for t in bati_remplaces if not plage[0] <= t < plage[1]]
+        if avant != len(bati_remplaces):
+            print(f"    {avant - len(bati_remplaces)} triangle(s) du complément "
+                  "BD TOPO conservé(s) dans le disque photo")
     cells = empreinte(pos_b, tris_b, bati_remplaces)
 
     # retraits appliqués aux façades texturées de la vue satellite

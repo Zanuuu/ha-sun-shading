@@ -10,7 +10,7 @@ from pathlib import Path
 
 from homeassistant.core import HomeAssistant
 
-from .const import (CONF_DOSSIER, CONF_OBJ, CONF_ORTHO_PX, CONF_PHOTO,
+from .const import (CONF_COMPLEMENT, CONF_DOSSIER, CONF_OBJ, CONF_ORTHO_PX, CONF_PHOTO,
                     CONF_PHOTO_RAYON, CONF_POSITION, CONF_RAYONS,
                     CONF_RELEVE_OMBRES, CONF_TITRE, DOSSIER_CACHE,
                     DOSSIER_RACINE, MARGES_RAYONS, MODE, MODE_EXTERNE,
@@ -85,6 +85,8 @@ def config_zone(entry) -> dict:
         "lat": float(position["latitude"]),
         "lon": float(position["longitude"]),
         "rayons": rayons(entry),
+        # bâtiments postérieurs à la maquette 2022 : ajoutés sauf refus
+        "complement": {"bdtopo": bool(reglage(entry, CONF_COMPLEMENT, True))},
     }
 
 

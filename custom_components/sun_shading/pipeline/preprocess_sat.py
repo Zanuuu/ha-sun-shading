@@ -38,6 +38,7 @@ BASE = None
 CX = CY = 0.0
 EX_T = R_TEX = R_BUILD = 0.0   # demi-étendue de l'atlas terrain ; rayons
 ZMIN_REF = 0.0                 # même référence altimétrique que donnees.bin.gz
+COMPLEMENT = None              # compte rendu du complément BD TOPO (meta.json)
 OUT = None
 
 Image.MAX_IMAGE_PIXELS = None
@@ -110,6 +111,33 @@ class Shelf:
         return pos
 
 
+def ajoute_complement(reste):
+    """Triangles du complément BD TOPO (plage `complement.tris` de meta.json),
+    relus dans donnees.bin.gz et versés dans le bâti non texturé. Retourne le
+    nombre de bâtiments ajoutés."""
+    plage = (COMPLEMENT or {}).get("tris")
+    if not plage or plage[1] <= plage[0]:
+        return 0
+    meta = json.load(open(os.path.join(OUT, "meta.json")))
+    sec = meta["sections"]["bati"]
+    buf = gzip.open(os.path.join(OUT, "donnees.bin.gz")).read()
+    dt = "I" if sec["isz"] == 4 else "H"
+    remap = {}
+    for t in range(plage[0], plage[1]):
+        idx = struct.unpack_from(f"<3{dt}", buf, sec["idx_off"] + t * 3 * sec["isz"])
+        ids = []
+        for i in idx:
+            gi = remap.get(i)
+            if gi is None:
+                qx, qy, qz = struct.unpack_from("<hhH", buf, sec["pos_off"] + i * 6)
+                gi = len(reste["verts"])
+                reste["verts"].append((qx * Q, qy * Q, qz * Q + ZMIN_REF))
+                remap[i] = gi
+            ids.append(gi)
+        reste["tris"].append(tuple(ids))
+    return len(COMPLEMENT.get("batiments") or [])
+
+
 def construit_facades(progression):
     os.makedirs(OUT, exist_ok=True)
 
@@ -153,6 +181,11 @@ def construit_facades(progression):
                     if ids[0] != ids[1] and ids[1] != ids[2] and ids[0] != ids[2]:
                         reste["tris"].append(tuple(ids))
         print(tile, "ok")
+
+    # bâtiments ajoutés depuis la BD TOPO : ils ne sont dans aucune dalle,
+    # et la vue satellite cache le bâti de la maquette — sans eux ici, une
+    # maison récente disparaîtrait en changeant de fond de carte
+    n_complement = ajoute_complement(reste)
 
     # rangement des textures par hauteur décroissante pour un bon remplissage
     a_texturer.sort(key=lambda e: -e[0].size[1])
@@ -250,7 +283,7 @@ def construit_facades(progression):
     with open(os.path.join(OUT, "sat_meta.json"), "w") as f:
         json.dump(meta, f)
     print("bâtiments texturés:", n_tex,
-          "| blancs:", n_reste, "| atlas:", len(atlases))
+          "| blancs:", n_reste, "| BD TOPO:", n_complement, "| atlas:", len(atlases))
     for i in range(len(atlases)):
         print(f"atlas{i}.webp",
               os.path.getsize(os.path.join(OUT, f"atlas{i}.webp")))
@@ -261,7 +294,7 @@ def construit_facades(progression):
 
 def construit(z, progression=None, ortho_px=None):
     """Vue satellite → ortho.webp, atlas<i>.webp, sat.bin.gz, sat_meta.json."""
-    global CX, CY, EX_T, R_TEX, R_BUILD, ZMIN_REF, OUT, BASE, ORTHO_PX
+    global CX, CY, EX_T, R_TEX, R_BUILD, ZMIN_REF, OUT, BASE, ORTHO_PX, COMPLEMENT
     progression = progression or Progression()
     BASE = os.path.join(zones.dossier_cache("maquette2022"), "extracted")
     if ortho_px:
@@ -269,6 +302,7 @@ def construit(z, progression=None, ortho_px=None):
     meta = z.meta()
     CX, CY = meta["centre_cc48"]
     ZMIN_REF = meta["zmin_ref"]
+    COMPLEMENT = meta.get("complement")
     EX_T = z.rayons["terrain"] + MARGE_ATLAS
     R_TEX, R_BUILD = z.rayons["textures"], z.rayons["bati"]
     OUT = z.donnees

@@ -1,7 +1,7 @@
 {
   "domain": "sun_shading",
   "name": "Sun Shading",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "documentation": "https://github.com/Zanuuu/ha-sun-shading",
   "issue_tracker": "https://github.com/Zanuuu/ha-sun-shading/issues",
   "codeowners": [

@@ -3,13 +3,15 @@ par lequel une erreur atteint l'utilisateur avant même la première carte."""
 import pytest
 from homeassistant import config_entries, data_entry_flow
 from homeassistant.core import HomeAssistant
+from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.sun_shading import estimation
-from custom_components.sun_shading.const import (CONF_DOSSIER, CONF_OBJ,
-                                                 CONF_PHOTO, CONF_POSITION,
-                                                 CONF_RAYONS, CONF_TITRE,
-                                                 DOMAINE, MODE, MODE_CONSTRUIT,
-                                                 MODE_EXTERNE)
+from custom_components.sun_shading import zone_entree
+from custom_components.sun_shading.const import (CONF_COMPLEMENT, CONF_DOSSIER,
+                                                 CONF_OBJ, CONF_PHOTO,
+                                                 CONF_POSITION, CONF_RAYONS,
+                                                 CONF_TITRE, DOMAINE, MODE,
+                                                 MODE_CONSTRUIT, MODE_EXTERNE)
 
 # cathédrale de Strasbourg : le point de la zone de démonstration, et un
 # lieu public — un test ne doit pas figer une adresse privée
@@ -118,3 +120,26 @@ async def test_dossier_externe(hass: HomeAssistant, tmp_path):
         form["flow_id"], {CONF_DOSSIER: str(dossier), CONF_TITRE: "Zone"})
     assert r["type"] is data_entry_flow.FlowResultType.CREATE_ENTRY
     assert r["data"][MODE] == MODE_EXTERNE
+
+
+async def test_complement_bdtopo_active_par_defaut(hass: HomeAssistant):
+    """La maquette 2022 vieillit : sans rien cocher, les bâtiments récents
+    de la BD TOPO sont ajoutés, et la zone du pipeline le sait."""
+    form = await ouvre(hass, "build")
+    resume = await hass.config_entries.flow.async_configure(form["flow_id"], saisie())
+    entree = await hass.config_entries.flow.async_configure(resume["flow_id"], {})
+    assert entree["data"][CONF_COMPLEMENT] is True
+    entry = MockConfigEntry(domain=DOMAINE, title="Maison", data=entree["data"])
+    assert zone_entree.config_zone(entry)["complement"] == {"bdtopo": True}
+
+
+async def test_complement_bdtopo_refusable(hass: HomeAssistant):
+    """Décoché : la zone le porte, et c'est un paramètre de reconstruction."""
+    form = await ouvre(hass, "build")
+    resume = await hass.config_entries.flow.async_configure(
+        form["flow_id"], saisie(advanced={"bdtopo": False}))
+    entree = await hass.config_entries.flow.async_configure(resume["flow_id"], {})
+    assert entree["data"][CONF_COMPLEMENT] is False
+    entry = MockConfigEntry(domain=DOMAINE, title="Maison", data=entree["data"])
+    assert zone_entree.config_zone(entry)["complement"] == {"bdtopo": False}
+    assert zone_entree.parametres_construits(hass, entry)["zone"]["complement"] == {"bdtopo": False}

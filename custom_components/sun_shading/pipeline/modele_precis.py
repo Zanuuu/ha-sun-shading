@@ -355,6 +355,11 @@ def lit_bati(z):
     return nv, nt, pos, tris
 
 
+# Au-delà de cette distance entre modele_precis.point et le sommet LoD2 le
+# plus proche, il n'y a pas de bâtiment à remplacer : le modèle s'ajoute.
+DISTANCE_MAX = 25.0
+
+
 def _parametres(z):
     p = dict(z.cfg.get("modele_precis") or {})
     p.setdefault("point", [0.0, 0.0])
@@ -383,6 +388,14 @@ def composante_lod2(z):
         d2 = (pos[i * 3] * Q - px) ** 2 + (pos[i * 3 + 1] * Q - py) ** 2
         if d2 < d2min:
             meilleur, d2min = i, d2
+    if d2min > DISTANCE_MAX ** 2:
+        # Rien à remplacer : le bâtiment visé n'est pas dans la maquette
+        # (construit après 2022, ou hors complément BD TOPO). Sans cette
+        # garde, la composante la plus proche serait celle du VOISIN, dont
+        # la toiture disparaîtrait en silence.
+        print(f"aucun bâtiment de la maquette à moins de {DISTANCE_MAX:g} m du "
+              f"point ({px:+.1f}, {py:+.1f}) : rien à retirer, le modèle est AJOUTÉ")
+        return nv, nt, pos, tris, []
     racine = uf.find(meilleur)
     composante = [t for t in range(nt) if uf.find(tris[t * 3]) == racine]
     som = {tris[t * 3 + k] for t in composante for k in range(3)}

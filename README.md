@@ -68,7 +68,29 @@ An **Advanced** section (collapsed) exposes the Photo 3D mode
 (photogrammetric mesh: about 1 GB and 20-30 minutes more, and 370 MB of
 graphics memory in the browser), the aerial imagery resolution, the lift
 applied to shadows baked into the 2022 imagery, a hand-modelled roof in OBJ
-form, and each radius individually.
+form, the **recent buildings** switch (on by default, see below), and each
+radius individually.
+
+### Buildings newer than the 3D model
+
+The Eurométropole model dates from **2022**. A house built since is not in
+it: it casts no shadow and has no surface to probe. The build therefore
+fetches the **IGN BD TOPO** (national, updated continuously) for the
+buildings radius, finds every footprint that no LoD2 building covers, and
+adds it as a simplified volume: walls up to the eaves height, a truncated
+roof up to the ridge height (both are IGN measurements; the 35° slope is a
+convention). Buildings already in the model are left alone; footprints only
+partly covered (an extension, a misalignment) are skipped and listed in the
+build log rather than guessed.
+
+Windows in the walls of such a house can be probed directly. Roof windows
+need the real roof shape: model it as an OBJ (see *Building a zone from the
+command line*) — it replaces the simplified roof and sits on the walls.
+
+Limit: a house that the BD TOPO does not know yet (typically a few months to
+a year after completion) cannot be obtained from any source. The OBJ path
+still works: with no building near the target point, the model is **added**
+as a whole instead of replacing anything.
 
 ### Use data built outside Home Assistant
 
@@ -144,8 +166,8 @@ azimuth.
 
 The source data is the Strasbourg Eurométropole 3D model, so **only addresses
 inside the Eurométropole are supported**. The config flow checks this before
-building and says so. Extending to national sources (IGN LiDAR HD, BD TOPO) is
-not planned here.
+building and says so. The IGN BD TOPO is used only as a complement, for
+buildings newer than the 2022 model; it does not extend the coverage.
 
 The interface of the map is in **French**; the integration, its entities and
 its services are in English. The timezone is fixed to `Europe/Paris`, which
@@ -155,8 +177,8 @@ follows from the coverage.
 
 The page makes **no request to any external service** — no CDN, no web font,
 no tile server. Everything it needs is served by your own Home Assistant.
-Downloads happen only during a build, only from `data.strasbourg.eu`, and only
-when you ask for one.
+Downloads happen only during a build, only from `data.strasbourg.eu` and
+`data.geopf.fr` (IGN, recent buildings), and only when you ask for one.
 
 ## Building a zone from the command line
 
@@ -176,12 +198,19 @@ title) is the only thing to write. Copy the resulting `dist/` into your
 configuration folder and point the integration at it. `sources/deploie_ha.py`
 does that copy over Samba if you have it.
 
-To replace the simplified LoD2 roof of one building with a modelled one,
-export it, edit it in Blender (or anything exporting Wavefront OBJ) and import
-it back with `sources/importe_toit_obj.py`; the config flow can then point at
-the OBJ. The volume must be closed and extend below the terrain — the shadow
-technique (BackSide, no self-shadowing) lifts shadows off the foot of an open
-wall.
+To replace the simplified roof of one building with a modelled one, draw it
+in Blender (or anything exporting Wavefront OBJ) in the zone's local frame —
+X east, Y north, Z metres above `zmin_ref` from `meta.json`, origin at the
+zone centre — and import it with `sources/importe_toit_obj.py`; the config
+flow can then point at the OBJ. The roof triangles of the nearest building
+(within 25 m of `modele_precis.point`, default the zone centre) are removed
+and the model takes their place, on the original walls. With no building
+within 25 m, nothing is removed and the model is added as a whole. The volume
+must be closed and extend below the terrain — the shadow technique (BackSide,
+no self-shadowing) lifts shadows off the foot of an open wall.
+
+`zone.json` may carry `"complement": {"bdtopo": false}` to build without the
+BD TOPO complement (on by default).
 
 ## Data sources and licences
 
@@ -193,6 +222,11 @@ Eurométropole de Strasbourg, [Licence Ouverte
 - Filaire de circulation (`filaire-de-circulation`) — road centre lines.
 - Photomaillage 3D 2022 (`pm3d_2022`) — photogrammetric mesh, produced with
   the support of FEDER and DataGrandEst.
+
+IGN, [Licence Ouverte 2.0](https://www.etalab.gouv.fr/licence-ouverte-open-licence/):
+
+- BD TOPO (`BDTOPO_V3:batiment`, WFS `data.geopf.fr`) — footprints and
+  heights of buildings newer than the 2022 model.
 
 Solar position: NOAA algorithm (public domain). Bundled libraries: three.js
 and three-mesh-bvh, both MIT — see `THIRD_PARTY_LICENSES`.

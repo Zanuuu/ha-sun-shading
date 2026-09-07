@@ -32,8 +32,8 @@ from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import selector
 
 from . import estimation
-from .const import (CONF_ADMIN, CONF_DOSSIER, CONF_FEUILLAISON, CONF_ICONE,
-                    CONF_OBJ, CONF_OMBRES, CONF_ORTHO_PX, CONF_PAS_AZIMUT,
+from .const import (CONF_ADMIN, CONF_COMPLEMENT, CONF_DOSSIER, CONF_FEUILLAISON,
+                    CONF_ICONE, CONF_OBJ, CONF_OMBRES, CONF_ORTHO_PX, CONF_PAS_AZIMUT,
                     CONF_PHOTO, CONF_PHOTO_RAYON, CONF_POSITION, CONF_RAYONS,
                     CONF_RELEVE_OMBRES, CONF_SEUIL, CONF_TITRE, DOMAINE,
                     FEUILLAISON_DEFAUT, ICONE_PANNEAU, MARGES_RAYONS, MODE,
@@ -77,6 +77,7 @@ def schema_construction(defauts: dict) -> vol.Schema:
                          default=defauts.get(CONF_RELEVE_OMBRES, 0.78)):
                 _nombre(0.5, 1.0, 0.01),
             vol.Optional(CONF_OBJ, default=defauts.get(CONF_OBJ, "")): str,
+            vol.Optional(CONF_COMPLEMENT, default=defauts.get(CONF_COMPLEMENT, True)): bool,
             vol.Optional("r_bati", default=avance.get("bati", 0)): _nombre(0, RAYON_MAX + 100, 10, "m"),
             vol.Optional("r_terrain", default=avance.get("terrain", 0)): _nombre(0, RAYON_MAX + 100, 10, "m"),
             vol.Optional("r_arbres", default=avance.get("arbres", 0)): _nombre(0, RAYON_MAX + 100, 10, "m"),
